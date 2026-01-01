@@ -208,7 +208,12 @@ def bulk_insert(
         pass
 
 
-    query_buf = QueryBuffer(graph, client, config)
+    # Check if graph already exists - if so, use append mode (skip BEGIN)
+    graph_exists = redis_con.exists(graph)
+    if graph_exists:
+        print(f"Graph '{graph}' already exists, using append mode...")
+
+    query_buf = QueryBuffer(graph, client, config, append_mode=graph_exists)
 
     # Read the header rows of each input CSV and save its schema.
     labels = parse_schemas(Label, query_buf, nodes, nodes_with_label, config)

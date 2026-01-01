@@ -8,7 +8,7 @@ def run(client, graphname, args):
 
 
 class QueryBuffer:
-    def __init__(self, graphname, client, config):
+    def __init__(self, graphname, client, config, append_mode=False):
         self.nodes = None
         self.top_node_id = 0
 
@@ -26,9 +26,9 @@ class QueryBuffer:
         self.redis_token_count = 0
         self.buffer_size = 0
 
-        # The first query should include a "BEGIN" token
+        # The first query should include a "BEGIN" token (unless in append mode)
         self.graphname = graphname
-        self.initial_query = True
+        self.initial_query = not append_mode  # Skip BEGIN if appending to existing graph
 
         self.node_count = 0
         self.relation_count = 0
