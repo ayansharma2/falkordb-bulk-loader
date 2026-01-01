@@ -1,10 +1,25 @@
 from pathos.pools import ThreadPool as Pool
+import sys
 
+_batch_counter = 0
 
 def run(client, graphname, args):
-    result = client.execute_command("GRAPH.BULK", graphname, *args)
-    stats = result.split(", ")
-    return stats
+    global _batch_counter
+    _batch_counter += 1
+    batch_num = _batch_counter
+
+    has_begin = "BEGIN" in args
+    print(f"[DEBUG] Batch #{batch_num}: sending GRAPH.BULK (BEGIN={has_begin}, args_count={len(args)})", file=sys.stderr)
+
+    try:
+        result = client.execute_command("GRAPH.BULK", graphname, *args)
+        stats = result.split(", ")
+        print(f"[DEBUG] Batch #{batch_num}: SUCCESS - {stats}", file=sys.stderr)
+        return stats
+    except Exception as e:
+        print(f"[DEBUG] Batch #{batch_num}: FAILED - {e}", file=sys.stderr)
+        print(f"[DEBUG] Batch #{batch_num}: args contained BEGIN={has_begin}", file=sys.stderr)
+        raise
 
 
 class QueryBuffer:
@@ -55,8 +70,11 @@ class QueryBuffer:
         )
         # Prepend a "BEGIN" token if this is the first query
         if self.initial_query:
+            print(f"[DEBUG] send_buffer: Adding BEGIN token (first query)", file=sys.stderr)
             args.insert(0, "BEGIN")
             self.initial_query = False
+        else:
+            print(f"[DEBUG] send_buffer: No BEGIN token (subsequent query)", file=sys.stderr)
 
         task = self.pool.apipe(run, self.client, self.graphname, args)
         self.add_task(task)
