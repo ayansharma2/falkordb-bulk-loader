@@ -207,13 +207,6 @@ def bulk_insert(
         # Ignore check if the connected server does not support the "MODULE LIST" command
         pass
 
-    # Verify that the graph name is not already used in the Redis database
-    key_exists = redis_con.exists(graph)
-    if key_exists:
-        print(
-            f"Graph with name '{graph}', could not be created, as '{graph}' already exists."
-        )
-        sys.exit(1)
 
     query_buf = QueryBuffer(graph, client, config)
 
